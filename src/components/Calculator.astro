@@ -1,160 +1,131 @@
 ---
-// Calculator.astro — Pyodide boot + render logic
-// Este componente no tiene HTML, solo el <script> con toda la lógica
+// BASE_URL viene de Astro en build time: '' en dev, '/calculadoraconsumo' en prod
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
-
-<script is:inline>
+<script slot="scripts" is:inline define:vars={{ baseUrl }}>
   let pyodide = null;
-  let pyCode = null;
+  let pyCode  = null;
   
-  // Pyodide boot
+  function waitForElement(id) {
+    return new Promise(resolve => {
+      const check = () => {
+        const el = document.getElementById(id);
+        if (el) return resolve(el);
+        requestAnimationFrame(check);
+      };
+      check();
+    });
+  }
+
   async function bootPyodide() {
-    const staticFiles = document.getElementById('loader-status');
     try {
-      status.textContent = 'descargando runtime...';
-      pyodide = await loadPyodide();
-      status.textContent = 'cargando scropt Python...';
-      
-      const paths = [
-        location.pathname.replace(/\/[^/]*$/, '') + '/calculator.py',
-        '/calculator.py',
-        './calculator.py',
-      ];
-      
-      let res;
-      for (const p of paths) {
-        try {
-          res = await fetch(p); 
-          if (res.ok)
-            break;
-        } catch {}
+      const status = await waitForElement('loader-status');
+      status.textContent = 'descargando runtime…';
+  
+      while (typeof loadPyodide === 'undefined') {
+        await new Promise(r => setTimeout(r, 50));
       }
-      if (!res?.ok)
-        throw new Error('no se pudo cargar calculator.py');
-        pyCode = await res.text();
-        
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('controls').style.display = 'block';
-        runCalc();
+  
+      pyodide = await loadPyodide();
+  
+      status.textContent = 'cargando script Python…';
+  
+      const candidates = [
+        baseUrl + '/calculator.py',
+        '/calculator.py',
+      ];
+  
+      let res;
+      for (const url of candidates) {
+        try { res = await fetch(url); if (res.ok) break; } catch {}
+      }
+  
+      if (!res?.ok) throw new Error(`No se pudo cargar calculator.py`);
+  
+      pyCode = await res.text();
+  
+      (await waitForElement('loader')).style.display = 'none';
+      (await waitForElement('controls')).style.display = 'block';
+  
+      runCalc();
     } catch (err) {
-      document.getElementById('loader').style.display = 'none';
+      const loader = await waitForElement('loader');
+      loader.style.display = 'none';
       showError(err.message);
     }
   }
-  
-  // Ejecutar el calculo de Python
+
   async function runCalc() {
-    if (!pyodide || !pyCode)
-      return;
-      
-    const btn = document.getElementById('btn-calc');
+    if (!pyodide || !pyCode) return;
+    const btn    = document.getElementById('btn-calc');
     const tarifa = parseFloat(document.getElementById('inp-tarifa').value) || 0.09;
-    const dias = parseInt(document.getElementById('inp-dias').value) || 5;
-    
+    const dias   = parseInt(document.getElementById('inp-dias').value)     || 5;
     btn.disabled = true;
     try {
       await pyodide.runPythonAsync(pyCode);
       const json = await pyodide.runPythonAsync(`run(${tarifa}, ${dias})`);
       const data = JSON.parse(json);
-      
       renderSummary(data.totales, data.parametros);
-      rederTable(data.espacios, data.totales);
+      renderTable(data.espacios, data.totales);
       renderChart(data.espacios);
-      
-      document.getElementById('summary').style.display = 'grid';
+      document.getElementById('summary').style.display       = 'grid';
       document.getElementById('table-section').style.display = 'block';
       document.getElementById('chart-section').style.display = 'block';
-      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('error-box').style.display     = 'none';
     } catch (err) {
       showError('Error en Python: ' + err.message);
     } finally {
       btn.disabled = false;
     }
   }
-  
-  // Render: metricas resumen
+
   function renderSummary(t, p) {
-    document.getElementById('s-dia').textContent = fmt(t.consumo_dia_kmh);
-    document.getElementById('s-sem').textContent = fmt(t.consumo_sem_kmh);
-    document.getElementById('s-mes').textContent = fmt(t.consumo_mes_kmh);
-    document.getElementById('s-costo').textContent = fmt(t.costo_mes);
+    document.getElementById('s-dia').textContent    = fmt(t.consumo_dia_kwh);
+    document.getElementById('s-sem').textContent    = fmt(t.consumo_semana_kwh);
+    document.getElementById('s-mes').textContent    = fmt(t.consumo_mes_kwh);
+    document.getElementById('s-costo').textContent  = fmt(t.costo_mes);
     document.getElementById('s-moneda').textContent = `$/mes · tarifa $${p.tarifa}/kWh`;
   }
-  
-  // Render: tabla de espacios
-  function rederTable(espacios, totales) {
+
+  function renderTable(espacios, totales) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
- 
     for (const e of espacios) {
       const kw    = e.aires.reduce((s, a) => s + a.potencia_total_kw, 0);
       const chips = e.aires.map(a => `
         <span class="chip chip-primary">
           <span class="icon">ac_unit</span>${a.descripcion}
-        </span>`
-      ).join('');
- 
+        </span>`).join('');
       tbody.innerHTML += `
         <tr class="border-b border-outline-variant transition-colors hover:bg-white/[.03]">
           <td class="py-4 pl-4 pr-3 align-middle">
             <p class="font-sans text-sm font-medium text-on-surface">${e.nombre}</p>
             <div class="mt-1.5 flex flex-wrap gap-1.5">
-              ${e.tipo_tgm ? `
-                <span class="chip">
-                  <span class="icon">device_hub</span>${e.tipo_tgm}
-                </span>` : ''}
-              <span class="chip">
-                <span class="icon">schedule</span>${e.horas_operacion}h/día
-              </span>
+              ${e.tipo_tgm ? `<span class="chip"><span class="icon">device_hub</span>${e.tipo_tgm}</span>` : ''}
+              <span class="chip"><span class="icon">schedule</span>${e.horas_operacion}h/día</span>
             </div>
           </td>
-          <td class="px-3 py-4 align-middle">
-            <div class="flex flex-wrap gap-1">${chips}</div>
-          </td>
-          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">
-            ${kw.toFixed(2)}
-          </td>
-          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">
-            ${fmt(e.consumo_dia_kwh)}
-          </td>
-          <td class="px-3 py-4 align-middle font-mono text-sm text-tertiary">
-            ${fmt(e.consumo_semana_kwh)}
-          </td>
-          <td class="py-4 pl-3 pr-4 align-middle font-mono text-sm font-bold text-error">
-            ${fmt(e.consumo_mes_kwh)}
-          </td>
+          <td class="px-3 py-4 align-middle"><div class="flex flex-wrap gap-1">${chips}</div></td>
+          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">${kw.toFixed(2)}</td>
+          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">${fmt(e.consumo_dia_kwh)}</td>
+          <td class="px-3 py-4 align-middle font-mono text-sm text-tertiary">${fmt(e.consumo_semana_kwh)}</td>
+          <td class="py-4 pl-3 pr-4 align-middle font-mono text-sm font-bold text-error">${fmt(e.consumo_mes_kwh)}</td>
         </tr>`;
     }
- 
     document.getElementById('tfoot').innerHTML = `
-      <tr style="background: linear-gradient(rgba(108,219,173,.08),rgba(108,219,173,.08)), #2D3130">
-        <td colspan="3"
-            class="border-t-2 border-outline py-4 pl-4 pr-3
-                   text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
-          Total centro
-        </td>
-        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm font-medium text-primary">
-          ${fmt(totales.consumo_dia_kwh)}
-          <span class="text-xs text-on-surface-variant opacity-60">kWh</span>
-        </td>
-        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm text-tertiary">
-          ${fmt(totales.consumo_semana_kwh)}
-          <span class="text-xs text-on-surface-variant opacity-60">kWh</span>
-        </td>
-        <td class="border-t-2 border-outline py-4 pl-3 pr-4 font-mono text-sm font-bold text-error">
-          ${fmt(totales.consumo_mes_kwh)}
-          <span class="text-xs text-on-surface-variant opacity-60">kWh</span>
-        </td>
+      <tr style="background:linear-gradient(rgba(108,219,173,.08),rgba(108,219,173,.08)),#2D3130">
+        <td colspan="3" class="border-t-2 border-outline py-4 pl-4 pr-3 text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">Total centro</td>
+        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm font-medium text-primary">${fmt(totales.consumo_dia_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
+        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm text-tertiary">${fmt(totales.consumo_semana_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
+        <td class="border-t-2 border-outline py-4 pl-3 pr-4 font-mono text-sm font-bold text-error">${fmt(totales.consumo_mes_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
       </tr>`;
   }
- 
-  /* ── Render: gráfica de barras ── */
+
   function renderChart(espacios) {
     const container = document.getElementById('bars');
     container.innerHTML = '';
     const max  = Math.max(...espacios.map(e => e.consumo_mes_kwh));
     const cols = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-primary', 'bg-secondary'];
- 
     espacios.forEach((e, i) => {
       const pct = max > 0 ? (e.consumo_mes_kwh / max * 100).toFixed(1) : 0;
       const row = document.createElement('div');
@@ -165,32 +136,26 @@
           <span class="font-mono text-xs text-primary">${fmt(e.consumo_mes_kwh)} kWh</span>
         </div>
         <div class="h-2 w-full overflow-hidden rounded-full bg-surface-highest">
-          <div class="bar-fill ${cols[i % cols.length]}"
-               style="width:0"
-               data-target="${pct}%"></div>
+          <div class="bar-fill ${cols[i % cols.length]}" style="width:0" data-target="${pct}%"></div>
         </div>`;
       container.appendChild(row);
     });
- 
-    // Anima las barras después del paint
     requestAnimationFrame(() => {
-      document.querySelectorAll('.bar-fill').forEach(el => {
-        el.style.width = el.dataset.target;
-      });
+      document.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.target; });
     });
   }
- 
-  /* ── Utilidades ── */
+
   function fmt(n) {
     return Number(n).toLocaleString('es-ES', { maximumFractionDigits: 2 });
   }
- 
+
   function showError(msg) {
     const box = document.getElementById('error-box');
     document.getElementById('error-msg').textContent = msg;
     box.style.display = 'flex';
   }
- 
-  /* ── Iniciar ── */
-  bootPyodide();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    bootPyodide();
+  });
 </script>
