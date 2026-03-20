@@ -2,7 +2,7 @@
 // BASE_URL viene de Astro en build time: '' en dev, '/calculadoraconsumo' en prod
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
-<script slot="scripts" is:inline define:vars={{ baseUrl }}>
+<script is:inline define:vars={{ baseUrl }}>
   let pyodide = null;
   let pyCode  = null;
   
@@ -68,61 +68,62 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
       renderSummary(data.totales, data.parametros);
       renderTable(data.espacios, data.totales);
       renderChart(data.espacios);
-      document.getElementById('summary').style.display       = 'grid';
-      document.getElementById('table-section').style.display = 'block';
-      document.getElementById('chart-section').style.display = 'block';
-      document.getElementById('error-box').style.display     = 'none';
+      (await waitForElement('summary')).style.display = 'grid';
+      (await waitForElement('table-section')).style.display = 'block';
+      (await waitForElement('chart-section')).style.display = 'block';
+      (await waitForElement('error-box')).style.display = 'none';
     } catch (err) {
       showError('Error en Python: ' + err.message);
     } finally {
       btn.disabled = false;
     }
   }
-
-  function renderSummary(t, p) {
-    document.getElementById('s-dia').textContent    = fmt(t.consumo_dia_kwh);
-    document.getElementById('s-sem').textContent    = fmt(t.consumo_semana_kwh);
-    document.getElementById('s-mes').textContent    = fmt(t.consumo_mes_kwh);
-    document.getElementById('s-costo').textContent  = fmt(t.costo_mes);
-    document.getElementById('s-moneda').textContent = `$/mes · tarifa $${p.tarifa}/kWh`;
+  
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`No existe #${id}`);
+      return;
+    }
+    el.textContent = value;
   }
 
-  function renderTable(espacios, totales) {
-    const tbody = document.getElementById('tbody');
+  function renderSummary(t, p) {
+    setText('s-dia', fmt(t.consumo_dia_kwh));
+    setText('s-sem', fmt(t.consumo_semana_kwh));
+    setText('s-mes', fmt(t.consumo_mes_kwh));
+    setText('s-costo', fmt(t.costo_mes));
+    setText('s-moneda', `$/mes · tarifa $${p.tarifa}/kWh`);
+  }
+
+  async function renderTable(espacios, totales) {
+    const tbody = await waitForElement('tbody');
     tbody.innerHTML = '';
+  
     for (const e of espacios) {
       const kw    = e.aires.reduce((s, a) => s + a.potencia_total_kw, 0);
       const chips = e.aires.map(a => `
         <span class="chip chip-primary">
           <span class="icon">ac_unit</span>${a.descripcion}
         </span>`).join('');
+  
       tbody.innerHTML += `
-        <tr class="border-b border-outline-variant transition-colors hover:bg-white/[.03]">
-          <td class="py-4 pl-4 pr-3 align-middle">
-            <p class="font-sans text-sm font-medium text-on-surface">${e.nombre}</p>
-            <div class="mt-1.5 flex flex-wrap gap-1.5">
-              ${e.tipo_tgm ? `<span class="chip"><span class="icon">device_hub</span>${e.tipo_tgm}</span>` : ''}
-              <span class="chip"><span class="icon">schedule</span>${e.horas_operacion}h/día</span>
-            </div>
-          </td>
-          <td class="px-3 py-4 align-middle"><div class="flex flex-wrap gap-1">${chips}</div></td>
-          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">${kw.toFixed(2)}</td>
-          <td class="px-3 py-4 align-middle font-mono text-sm font-medium text-primary">${fmt(e.consumo_dia_kwh)}</td>
-          <td class="px-3 py-4 align-middle font-mono text-sm text-tertiary">${fmt(e.consumo_semana_kwh)}</td>
-          <td class="py-4 pl-3 pr-4 align-middle font-mono text-sm font-bold text-error">${fmt(e.consumo_mes_kwh)}</td>
+        <tr>
+          <td>${e.nombre}</td>
+          <td>${chips}</td>
+          <td>${kw.toFixed(2)}</td>
+          <td>${fmt(e.consumo_dia_kwh)}</td>
+          <td>${fmt(e.consumo_semana_kwh)}</td>
+          <td>${fmt(e.consumo_mes_kwh)}</td>
         </tr>`;
     }
-    document.getElementById('tfoot').innerHTML = `
-      <tr style="background:linear-gradient(rgba(108,219,173,.08),rgba(108,219,173,.08)),#2D3130">
-        <td colspan="3" class="border-t-2 border-outline py-4 pl-4 pr-3 text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">Total centro</td>
-        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm font-medium text-primary">${fmt(totales.consumo_dia_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
-        <td class="border-t-2 border-outline px-3 py-4 font-mono text-sm text-tertiary">${fmt(totales.consumo_semana_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
-        <td class="border-t-2 border-outline py-4 pl-3 pr-4 font-mono text-sm font-bold text-error">${fmt(totales.consumo_mes_kwh)} <span class="text-xs text-on-surface-variant opacity-60">kWh</span></td>
-      </tr>`;
+  
+    const tfoot = await waitForElement('tfoot');
+    tfoot.innerHTML = `...`;
   }
 
-  function renderChart(espacios) {
-    const container = document.getElementById('bars');
+  async function renderChart(espacios) {
+    const container = await waitForElement('bars');
     container.innerHTML = '';
     const max  = Math.max(...espacios.map(e => e.consumo_mes_kwh));
     const cols = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-primary', 'bg-secondary'];
@@ -151,7 +152,8 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   function showError(msg) {
     const box = document.getElementById('error-box');
-    document.getElementById('error-msg').textContent = msg;
+    const el = document.getElementById('error-msg');
+    if (el) el.textContent = msg;
     box.style.display = 'flex';
   }
 
