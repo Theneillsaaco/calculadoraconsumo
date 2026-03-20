@@ -1,0 +1,67 @@
+---
+// MD3 Summary — Tonal Container metric cards
+---
+
+<div id="summary" class="hidden grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="animate-fade-up flex flex-col gap-3 rounded-lg bg-primary-container p-5">
+        <span class="icon text-2xl text-on-primary-container opacity-75">
+            wb_sunny
+        </span>
+        <p class="text-[11px] font-medium uppercase tracking-widest text-on-primary-container opacity-75">
+            Por dia
+        </p>
+        <p id="s-dia" class="font-sans text-4xl font-bold leading-none text-on-primary-container">
+            -
+        </p>
+        <p class="text-xs text-on-primary-container opacity-60">
+            kWh
+        </p>
+    </div>
+    <!-- Por semana — Secondary Container -->
+    <div class="animate-fade-up flex flex-col gap-3 rounded-lg bg-secondary-container p-5">
+        <span class="icon text-2xl text-on-secondary-container opacity-75">
+            date_range
+        </span>
+        <p class="text-[11px] font-medium uppercase tracking-widest text-on-secondary-container opacity-75">
+            Por semana
+        </p>
+        <p id="s-sem" class="font-sans text-4xl font-bold leading-none text-on-secondary-container">
+            —
+        </p>
+        <p class="text-xs text-on-secondary-container opacity-60">
+            kWh
+        </p>
+    </div>
+   
+    <!-- Por mes — Tertiary Container -->
+    <div class="animate-fade-up flex flex-col gap-3 rounded-lg bg-tertiary-container p-5">
+        <span class="icon text-2xl text-on-tertiary-container opacity-75">
+            calendar_month
+        </span>
+        <p class="text-[11px] font-medium uppercase tracking-widest text-on-tertiary-container opacity-75">
+            Por mes
+        </p>
+        <p id="s-mes" class="font-sans text-4xl font-bold leading-none text-on-tertiary-container">
+            —
+        </p>
+        <p class="text-xs text-on-tertiary-container opacity-60">
+            kWh
+        </p>
+    </div>
+   
+    <!-- Costo mensual — Surface High -->
+    <div class="animate-fade-up flex flex-col gap-3 rounded-lg bg-surface-high p-5">
+        <span class="icon text-2xl text-primary opacity-75">
+            attach_money
+        </span>
+        <p class="text-[11px] font-medium uppercase tracking-widest text-on-surface-variant opacity-75">
+            Costo mensual
+        </p>
+        <p id="s-costo" class="font-sans text-4xl font-bold leading-none text-primary">
+            —
+        </p>
+        <p id="s-moneda" class="text-xs text-on-surface-variant opacity-60">
+            $
+        </p>
+    </div>
+</div>
