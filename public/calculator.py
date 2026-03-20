@@ -179,3 +179,56 @@ def calcular_centro(tarifa: float = TARIFA_DEFAULT, dias_semana: int = 5) -> dic
 def run(tarifa=TARIFA_DEFAULT, dias_semana=5):
     result = calcular_centro(float(tarifa), int(dias_semana))
     return json.dumps(result)
+
+# ── Función para recibir equipos editados desde el frontend ──
+def run_custom(tarifa=TARIFA_DEFAULT, dias_semana=5, espacios_json='[]'):
+    """
+    Calcula el consumo usando los equipos definidos dinámicamente por el usuario.
+    espacios_json: string JSON con lista de espacios en el formato del frontend.
+    """
+    import json as _json
+
+    data = _json.loads(espacios_json)
+    espacios = []
+
+    for esp_data in data:
+        aires = []
+        for a in esp_data.get('aires', []):
+            aires.append(AireAcondicionado(
+                nombre=a.get('nombre', 'A/C'),
+                cantidad=int(a.get('cantidad', 1)),
+                capacidad_btu=int(a.get('capacidad_btu', 12000)),
+                horas_dia=float(a.get('horas_dia', 8)),
+                dias_semana=int(dias_semana),
+                eer=float(a.get('eer', 9.0)),
+            ))
+        e = Espacio(
+            nombre=esp_data.get('nombre', 'Espacio'),
+            horario_inicio=float(esp_data.get('horario_inicio', 7)),
+            horario_fin=float(esp_data.get('horario_fin', 16)),
+            tipo_tgm=esp_data.get('tipo_tgm', ''),
+            dias_semana=int(dias_semana),
+            aires=aires,
+        )
+        espacios.append(e)
+
+    total_dia    = sum(e.consumo_dia_kwh for e in espacios)
+    total_semana = sum(e.consumo_semana_kwh for e in espacios)
+    total_mes    = sum(e.consumo_mes_kwh for e in espacios)
+
+    result = {
+        "espacios": [e.to_dict() for e in espacios],
+        "totales": {
+            "consumo_dia_kwh":    round(total_dia, 2),
+            "consumo_semana_kwh": round(total_semana, 2),
+            "consumo_mes_kwh":    round(total_mes, 2),
+            "costo_dia":          round(total_dia * tarifa, 2),
+            "costo_semana":       round(total_semana * tarifa, 2),
+            "costo_mes":          round(total_mes * tarifa, 2),
+        },
+        "parametros": {
+            "tarifa":     tarifa,
+            "dias_semana": dias_semana,
+        }
+    }
+    return _json.dumps(result)

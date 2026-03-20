@@ -8,6 +8,7 @@ import SummaryCards from '../components/SummaryCards.astro';
 import TableCard from '../components/TableCard.astro';
 import ChartCard from '../components/ChartCard.astro';
 import Calculator from '../components/Calculator.astro';
+import EquiposManager from '../components/EquiposManager.astro';
 ---
 
 <Layout>
@@ -41,6 +42,8 @@ import Calculator from '../components/Calculator.astro';
         </footer>
     </main>
     
+    <!-- Modal CRUD -->
+    <EquiposManager />
     <!-- Logica Pyodide + render (sin HTML) -->
     <Calculator />
 </Layout>

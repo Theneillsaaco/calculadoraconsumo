@@ -5,7 +5,41 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 <script is:inline define:vars={{ baseUrl }}>
   let pyodide = null;
   let pyCode  = null;
-  
+
+  // ── Estado de equipos (editable en runtime) ──
+  let espaciosState = [
+    {
+      id: 1, nombre: "Salón de Maestros", horario_inicio: 7, horario_fin: 16.5,
+      tipo_tgm: "TGM 3", dias_semana: 5,
+      aires: [{ id: 1, nombre: "Split 21", cantidad: 2, capacidad_btu: 24000, horas_dia: 9.5, eer: 9.0 }]
+    },
+    {
+      id: 2, nombre: "Caja", horario_inicio: 7, horario_fin: 18.5,
+      tipo_tgm: "TGM 3", dias_semana: 5,
+      aires: [{ id: 1, nombre: "Split 16", cantidad: 3, capacidad_btu: 18000, horas_dia: 11.5, eer: 9.0 }]
+    },
+    {
+      id: 3, nombre: "Dirección", horario_inicio: 7, horario_fin: 20,
+      tipo_tgm: "Midea Confort Time", dias_semana: 5,
+      aires: [{ id: 1, nombre: "Split 16", cantidad: 2, capacidad_btu: 18000, horas_dia: 13, eer: 9.0 }]
+    },
+    {
+      id: 4, nombre: "Salón de Informática", horario_inicio: 0, horario_fin: 1,
+      tipo_tgm: "AUX", dias_semana: 5,
+      aires: [{ id: 1, nombre: "Split 21", cantidad: 1, capacidad_btu: 24000, horas_dia: 1, eer: 9.0 }]
+    },
+    {
+      id: 5, nombre: "Salón Multiusos", horario_inicio: 0, horario_fin: 5,
+      tipo_tgm: "Gree", dias_semana: 5,
+      aires: [{ id: 1, nombre: "Gree 21", cantidad: 2, capacidad_btu: 24000, horas_dia: 5, eer: 9.0 }]
+    },
+  ];
+
+  let nextEspacioId = 6;
+  let nextAireId = 10;
+  let estadoEdicion = null;
+
+  // ── Pyodide bootstrap ──
   function waitForElement(id) {
     return new Promise(resolve => {
       const check = () => {
@@ -21,33 +55,22 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
     try {
       const status = await waitForElement('loader-status');
       status.textContent = 'descargando runtime…';
-  
       while (typeof loadPyodide === 'undefined') {
         await new Promise(r => setTimeout(r, 50));
       }
-  
       pyodide = await loadPyodide();
-  
       status.textContent = 'cargando script Python…';
-  
-      const candidates = [
-        baseUrl + '/calculator.py',
-        '/calculator.py',
-      ];
-  
+
+      const candidates = [baseUrl + '/calculator.py', '/calculator.py'];
       let res;
       for (const url of candidates) {
-        try { res = await fetch(url); if (res.ok) break; } catch {}
+        try { res = await fetch(url); if (res.ok) break; } catch(e) {}
       }
-  
-      if (!res?.ok) throw new Error(`No se pudo cargar calculator.py`);
-  
+      if (!res || !res.ok) throw new Error('No se pudo cargar calculator.py');
       pyCode = await res.text();
-  
+
       (await waitForElement('loader')).style.display = 'none';
       (await waitForElement('controls')).style.display = 'block';
-  
-      runCalc();
     } catch (err) {
       const loader = await waitForElement('loader');
       loader.style.display = 'none';
@@ -59,11 +82,12 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
     if (!pyodide || !pyCode) return;
     const btn    = document.getElementById('btn-calc');
     const tarifa = parseFloat(document.getElementById('inp-tarifa').value) || 0.09;
-    const dias   = parseInt(document.getElementById('inp-dias').value)     || 5;
-    btn.disabled = true;
+    const dias   = parseInt(document.getElementById('inp-dias').value) || 5;
+    if (btn) btn.disabled = true;
     try {
       await pyodide.runPythonAsync(pyCode);
-      const json = await pyodide.runPythonAsync(`run(${tarifa}, ${dias})`);
+      const jsonEstado = JSON.stringify(espaciosState).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      const json = await pyodide.runPythonAsync(`run_custom(${tarifa}, ${dias}, '${jsonEstado}')`);
       const data = JSON.parse(json);
       renderSummary(data.totales, data.parametros);
       renderTable(data.espacios, data.totales);
@@ -75,17 +99,13 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
     } catch (err) {
       showError('Error en Python: ' + err.message);
     } finally {
-      btn.disabled = false;
+      if (btn) btn.disabled = false;
     }
   }
-  
+
   function setText(id, value) {
     const el = document.getElementById(id);
-    if (!el) {
-      console.warn(`No existe #${id}`);
-      return;
-    }
-    el.textContent = value;
+    if (el) el.textContent = value;
   }
 
   function renderSummary(t, p) {
@@ -99,27 +119,30 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
   async function renderTable(espacios, totales) {
     const tbody = await waitForElement('tbody');
     tbody.innerHTML = '';
-  
     for (const e of espacios) {
       const kw    = e.aires.reduce((s, a) => s + a.potencia_total_kw, 0);
-      const chips = e.aires.map(a => `
-        <span class="chip chip-primary">
-          <span class="icon">ac_unit</span>${a.descripcion}
-        </span>`).join('');
-  
+      const chips = e.aires.map(a =>
+        `<span class="chip chip-primary"><span class="icon">ac_unit</span>${a.descripcion}</span>`
+      ).join('');
       tbody.innerHTML += `
         <tr>
-          <td>${e.nombre}</td>
-          <td>${chips}</td>
-          <td>${kw.toFixed(2)}</td>
-          <td>${fmt(e.consumo_dia_kwh)}</td>
-          <td>${fmt(e.consumo_semana_kwh)}</td>
-          <td>${fmt(e.consumo_mes_kwh)}</td>
+          <td class="col-espacio">${e.nombre}</td>
+          <td class="col-equipos"><div class="chip-cell">${chips}</div></td>
+          <td class="num-cell">${kw.toFixed(2)}</td>
+          <td class="num-cell">${fmt(e.consumo_dia_kwh)}</td>
+          <td class="num-cell">${fmt(e.consumo_semana_kwh)}</td>
+          <td class="num-cell">${fmt(e.consumo_mes_kwh)}</td>
         </tr>`;
     }
-  
     const tfoot = await waitForElement('tfoot');
-    tfoot.innerHTML = `...`;
+    tfoot.innerHTML = `
+      <tr class="total-row">
+        <td colspan="2" class="pl-4 font-medium text-on-surface">Total general</td>
+        <td class="num-cell">—</td>
+        <td class="num-cell font-medium text-primary">${fmt(totales.consumo_dia_kwh)}</td>
+        <td class="num-cell font-medium text-primary">${fmt(totales.consumo_semana_kwh)}</td>
+        <td class="num-cell font-medium text-primary">${fmt(totales.consumo_mes_kwh)}</td>
+      </tr>`;
   }
 
   async function renderChart(espacios) {
@@ -132,7 +155,7 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
       const row = document.createElement('div');
       row.className = 'flex flex-col gap-1';
       row.innerHTML = `
-        <div class="flex items-baseline justify-between">
+        <div class="flex items-baseline justify-between gap-2 flex-wrap">
           <span class="text-xs text-on-surface-variant">${e.nombre}</span>
           <span class="font-mono text-xs text-primary">${fmt(e.consumo_mes_kwh)} kWh</span>
         </div>
@@ -152,13 +175,163 @@ const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 
   function showError(msg) {
     const box = document.getElementById('error-box');
-    const el = document.getElementById('error-msg');
+    const el  = document.getElementById('error-msg');
     if (el) el.textContent = msg;
-    box.style.display = 'flex';
+    if (box) box.style.display = 'flex';
+  }
+
+  // ══ CRUD ══
+  function abrirGestor() {
+      console.log("SE ABRIÓ EL GESTOR 👀");
+    estadoEdicion = JSON.parse(JSON.stringify(espaciosState));
+    renderListaEspacios();
+    const overlay = document.getElementById('modal-overlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarGestor() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function cerrarGestorOverlay(event) {
+    if (event.target === document.getElementById('modal-overlay')) cerrarGestor();
+  }
+
+  function guardarCambios() {
+    const cards = document.querySelectorAll('.espacio-card-item');
+    const nuevoEstado = [];
+    cards.forEach(card => {
+      const eid = parseInt(card.dataset.espacioId);
+      const esp = estadoEdicion.find(e => e.id === eid);
+      if (!esp) return;
+      esp.nombre = card.querySelector('.espacio-name-input').value.trim() || esp.nombre;
+      const airesRows = card.querySelectorAll('.equipo-row-item');
+      esp.aires = [];
+      airesRows.forEach(row => {
+        const aid = parseInt(row.dataset.aireId);
+        esp.aires.push({
+          id:           aid,
+          nombre:       row.querySelector('.aire-nombre').value.trim(),
+          cantidad:     parseInt(row.querySelector('.aire-cantidad').value) || 1,
+          capacidad_btu:parseInt(row.querySelector('.aire-btu').value) || 12000,
+          horas_dia:    parseFloat(row.querySelector('.aire-horas').value) || 1,
+          eer:          parseFloat(row.querySelector('.aire-eer').value) || 9.0,
+        });
+      });
+      if (esp.aires.length > 0) nuevoEstado.push(esp);
+    });
+    espaciosState = nuevoEstado;
+    cerrarGestor();
+    runCalc();
+  }
+
+  function agregarEspacio() {
+    const id = nextEspacioId++;
+    estadoEdicion.push({
+      id, nombre: `Espacio ${id}`,
+      horario_inicio: 7, horario_fin: 16,
+      tipo_tgm: '', dias_semana: 5,
+      aires: [{ id: nextAireId++, nombre: 'Split 12', cantidad: 1, capacidad_btu: 12000, horas_dia: 8, eer: 9.0 }]
+    });
+    renderListaEspacios();
+    const body = document.querySelector('.modal-body');
+    if (body) setTimeout(() => body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }), 50);
+  }
+
+  function eliminarEspacio(eid) {
+    estadoEdicion = estadoEdicion.filter(e => e.id !== eid);
+    renderListaEspacios();
+  }
+
+  function agregarEquipo(eid) {
+    const esp = estadoEdicion.find(e => e.id === eid);
+    if (!esp) return;
+    esp.aires.push({ id: nextAireId++, nombre: 'Split 12', cantidad: 1, capacidad_btu: 12000, horas_dia: 8, eer: 9.0 });
+    renderListaEspacios();
+  }
+
+  function eliminarEquipo(eid, aid) {
+    const esp = estadoEdicion.find(e => e.id === eid);
+    if (!esp) return;
+    esp.aires = esp.aires.filter(a => a.id !== aid);
+    renderListaEspacios();
+  }
+
+  function renderListaEspacios() {
+    const lista = document.getElementById('lista-espacios');
+    lista.innerHTML = '';
+
+    if (estadoEdicion.length === 0) {
+      lista.innerHTML = '<p style="text-align:center;padding:24px 0;font-size:13px;color:var(--color-on-surface-variant);opacity:.6">No hay espacios. Agrega uno con el botón de abajo.</p>';
+      return;
+    }
+
+    estadoEdicion.forEach(esp => {
+      const airesHTML = esp.aires.map(a => `
+        <div class="equipo-row equipo-row-item" data-aire-id="${a.id}">
+          <div class="mini-tf">
+            <label>Nombre</label>
+            <input type="text" class="aire-nombre" value="${a.nombre}" />
+          </div>
+          <div class="mini-tf">
+            <label>Cant.</label>
+            <input type="number" class="aire-cantidad" value="${a.cantidad}" min="1" max="20" />
+          </div>
+          <div class="mini-tf">
+            <label>BTU</label>
+            <select class="aire-btu">
+              <option value="9000"  ${a.capacidad_btu===9000?'selected':''}>9,000</option>
+              <option value="12000" ${a.capacidad_btu===12000?'selected':''}>12,000</option>
+              <option value="18000" ${a.capacidad_btu===18000?'selected':''}>18,000</option>
+              <option value="24000" ${a.capacidad_btu===24000?'selected':''}>24,000</option>
+              <option value="36000" ${a.capacidad_btu===36000?'selected':''}>36,000</option>
+            </select>
+          </div>
+          <div class="mini-tf">
+            <label>Hrs/día</label>
+            <input type="number" class="aire-horas" value="${a.horas_dia}" min="0.5" max="24" step="0.5" />
+          </div>
+          <div class="mini-tf">
+            <label>EER</label>
+            <input type="number" class="aire-eer" value="${a.eer}" min="6" max="16" step="0.5" />
+          </div>
+          <button class="delete-equipo-btn" onclick="eliminarEquipo(${esp.id}, ${a.id})" title="Eliminar equipo">delete</button>
+        </div>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'espacio-card espacio-card-item';
+      card.dataset.espacioId = esp.id;
+      card.innerHTML = `
+        <div class="espacio-card-header">
+          <span style="font-family:Material Symbols Outlined;font-size:18px;color:var(--color-secondary);flex-shrink:0">meeting_room</span>
+          <input type="text" class="espacio-name-input" value="${esp.nombre}" placeholder="Nombre del espacio" />
+          <button class="delete-espacio-btn" onclick="eliminarEspacio(${esp.id})" title="Eliminar espacio">delete</button>
+        </div>
+        <hr class="divider" />
+        <p class="equipos-label">Equipos A/C</p>
+        <div class="aires-container">${airesHTML}</div>
+        <button class="add-equipo-btn" onclick="agregarEquipo(${esp.id})">
+          <span style="font-family:Material Symbols Outlined;font-size:14px">add</span> Agregar equipo
+        </button>`;
+      lista.appendChild(card);
+    });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    window.runCalc = runCalc;
+    window.runCalc             = runCalc;
+    window.abrirGestor         = abrirGestor;
+    window.cerrarGestor        = cerrarGestor;
+    window.cerrarGestorOverlay = cerrarGestorOverlay;
+    window.guardarCambios      = guardarCambios;
+    window.agregarEspacio      = agregarEspacio;
+    window.eliminarEspacio     = eliminarEspacio;
+    window.agregarEquipo       = agregarEquipo;
+    window.eliminarEquipo      = eliminarEquipo;
     bootPyodide();
   });
 </script>

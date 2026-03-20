@@ -1,57 +1,96 @@
 ---
-// MD3 Settings Card — Outlined Text Fields + Filled Button
+// MD3 Settings Card — Outlined Text Fields + Filled/Outlined Buttons
 ---
+<div id="controls" class="hidden rounded-[12px] bg-surface shadow-md border border-outline-variant overflow-hidden">
 
-<div id="controls" class="card-elevated hidden">
-    <!-- Card Header -->
-    <div class="flex items-center gap-3 px-4 pb-2 pt-4">
-        <span class="icon text-xl text-secondary">
-            tune
-        </span>
-        <span class="font-sans text-base font-medium leading-6 text-on-surface">
-            Parametros de calculo
-        </span>
+  <!-- Card Header -->
+  <div class="flex items-center gap-3 px-4 pb-2 pt-4">
+    <span class="icon text-xl text-secondary">tune</span>
+    <span class="font-medium text-base leading-6 text-on-surface">
+      Parametros de calculo
+    </span>
+  </div>
+
+  <hr class="border-outline-variant" />
+
+  <!-- Card Body -->
+  <div class="flex flex-wrap items-end gap-3 px-4 pb-5 pt-3">
+
+    <!-- Text Field: Tarifa -->
+    <div class="tf-wrap flex-1 min-w-[140px]">
+      <span class="icon tf-icon">payments</span>
+      <input
+        type="number"
+        id="inp-tarifa"
+        class="tf-input"
+        value="0.09"
+        step="0.01"
+        min="0"
+        placeholder=" "
+      />
+      <label class="tf-label">Tarifa ($/kWh)</label>
     </div>
-    <hr class="border-outline-variant" />
-    
-    <!-- Card body -->
-    <div class="flex flex-wrap items-end gap-4 px-4 pb-5 pt-3">
-        <!-- MD3 Outlined Text Field: Tarifa -->
-        <div class="tf-wrap min-w-[160px] flex-1">
-            <span class="icon tf-icon">
-                payments
-            </span>
-            <input
-              type="number"
-              id="inp-tarifa"
-              class="tf-input"
-              value="0.09"
-              step="0.01"
-              min="0"
-              placeholder=" "
-            />
-            <label class="tf-label">Tarifa ($/kWh)</label>
-        </div>
-        
-        <!-- MD3 Outlined Text Field: Dias/semana -->
-        <div class="tf-wrap min-w-[160px] flex-1">
-          <span class="icon tf-icon">calendar_today</span>
-          <input
-            type="number"
-            id="inp-dias"
-            class="tf-input"
-            value="5"
-            min="1"
-            max="7"
-            placeholder=" "
-          />
-          <label class="tf-label">Días / semana</label>
-        </div>
-     
-        <!-- MD3 Filled Button -->
-        <button id="btn-calc" class="btn-filled" onclick="runCalc()">
-          <span class="icon" style="font-size:18px">calculate</span>
-          Calcular consumo
-        </button>
+
+    <!-- Text Field: Días -->
+    <div class="tf-wrap flex-1 min-w-[140px]">
+      <span class="icon tf-icon">calendar_today</span>
+      <input
+        type="number"
+        id="inp-dias"
+        class="tf-input"
+        value="5"
+        min="1"
+        max="7"
+        placeholder=" "
+      />
+      <label class="tf-label">Días / semana</label>
     </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap gap-2 items-center">
+
+      <!-- Filled Button (MD3) -->
+      <button
+        id="btn-calc"
+        class="hidden relative overflow-hidden
+               inline-flex items-center gap-2
+               h-10 px-5
+               rounded-lg
+               border border-outline
+               bg-transparent
+               text-primary text-sm font-medium
+               font-sans whitespace-nowrap cursor-pointer
+               transition-colors duration-200
+               hover:bg-primary/[0.08] hover:border-primary
+               active:bg-primary/[0.12]
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        onclick="runCalc()"
+      >
+        <span class="icon text-[18px]">calculate</span>
+        Calcular
+      </button>
+
+      <!-- Outlined Button (MD3) -->
+      <button
+        id="btn-gestionar"
+        class="hidden relative overflow-hidden
+               inline-flex items-center gap-2
+               h-10 px-5
+               rounded-lg
+               border border-outline
+               bg-transparent
+               text-primary text-sm font-medium
+               font-sans whitespace-nowrap cursor-pointer
+               transition-colors duration-200
+               hover:bg-primary/[0.08] hover:border-primary
+               active:bg-primary/[0.12]
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        onclick="abrirGestor()"
+      >
+        <span class="icon text-[18px]">edit_note</span>
+        <span class="sm:inline hidden">Gestionar equipos</span>
+      </button>
+
+    </div>
+  </div>
 </div>
