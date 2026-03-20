@@ -1,0 +1,43 @@
+---
+// MD3 Table Card — Elevated with desglose por espacio
+---
+<div id="table-section" class="card-elevated animate-fade-up hidden">
+    <!-- Card Header -->
+    <div class="flex items-center gap-3 px-4 pb-2 pt-4">
+        <span class="icon text-xl text-secondary">table_chart</span>
+        <span class="font-sans text-base font-medium leading-6 text-on-surface">
+            Desglose por espacio
+        </span>
+    </div>
+    <hr class="border-outline-variant" />
+    
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="border-b border-outline-variant">
+                    <th class="py-3 pl-4 pr-3 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        Espacio
+                    </th>
+                    <th class="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        Equipos A/C
+                    </th>
+                    <th class="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        kW total
+                    </th>
+                    <th class="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        kWh / día
+                    </th>
+                    <th class="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        kWh / sem
+                    </th>
+                    <th class="py-3 pl-3 pr-4 text-left text-[11px] font-medium uppercase tracking-widest text-on-surface-variant">
+                        kWh / mes
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tbody" />
+            <tfoot id="tfoot" />
+        </table>
+    </div>
+</div>
