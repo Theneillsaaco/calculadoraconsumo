@@ -1,1 +1,280 @@
 @import "tailwindcss";
+
+@theme {
+    --font-san: "Google Sans", Roboto, sans-serif;
+    --font-body: Roboto, sans-serif;
+    --font-mono: "Roboto Mono", monospace;
+    
+    --color-primary: #6CDBAD;
+    --color-on-primary: #003826;
+    --color-primary-container: #00513A;
+    --color-on-primary-container: #89F8C9;
+   
+    --color-secondary: #B2CCBF;
+    --color-on-secondary: #1D352B;
+    --color-secondary-container: #334B41;
+    --color-on-secondary-container: #CEE9DC;
+   
+    --color-tertiary: #A0CFEA;
+    --color-on-tertiary: #003549;
+    --color-tertiary-container: #1A4C61;
+    --color-on-tertiary-container: #C2E8FF;
+   
+    --color-error: #FFB4AB;
+    --color-on-error: #690005;
+    --color-error-container: #93000A;
+    --color-on-error-container: #FFDAD6;
+   
+    --color-background: #191C1A;
+    --color-on-background: #E1E3E0;
+    --color-surface: #191C1A;
+    --color-on-surface: #E1E3E0;
+    --color-surface-variant: #3F4944;
+    --color-on-surface-variant: #BEC9C3;
+    --color-outline: #899389;
+    --color-outline-variant: #3F4944;
+    
+    --color-surface-lowest: #141717;
+    --color-surface-low: #1E2220;
+    --color-surface-mid: #222624;
+    --color-surface-high: #2D3130;
+    --color-surface-highest: #383C3A;
+    
+    --shadow-elev1: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px 1px rgba(0,0,0,.15);
+    --shadow-elev2: 0 1px 2px rgba(0,0,0,.3), 0 2px 6px 2px rgba(0,0,0,.15);
+    --shadow-elev3: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.3);
+    
+    --animate-fade-up: fade-up .3s cubic-bezier(.4,0,.2,1) both;
+    --animate-pulse-slow: pulse-slow 1.5s ease-in-out infinite;
+    --animate-indeterminate: indeterminate 1.4s cubic-bezier(.4,0,.6,1) infinite;
+    
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(.85); }
+    }
+    
+    @keyframes indeterminate {
+      0%   { left: -40%; width: 40%; }
+      60%  { left: 100%; width: 50%; }
+      100% { left: 100%; width: 40%; }
+    }
+}
+
+/* ── Base styles ── */
+html, body {
+  margin: 0;
+  width: 100%;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+}
+ 
+/* Material Symbols — Tailwind no puede manejar font-family en utilidades */
+.icon {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* ── MD3 Elevated Card (tonal overlay) ── */
+.card-elevated {
+  background: linear-gradient(rgba(108,219,173,.05), rgba(108,219,173,.05)),
+              var(--color-surface-low);
+  box-shadow: var(--shadow-elev1);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow .2s;
+}
+
+.card-elevated:hover {
+  box-shadow: var(--shadow-elev2);
+}
+
+.card-elevated::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity .15s;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.card-elevated:hover::after { 
+    opacity: .04; 
+}
+ 
+/* ── MD3 Filled Button state layer ── */
+.btn-filled {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .01em;
+  height: 40px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: box-shadow .2s;
+}
+
+.btn-filled::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-on-primary);
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+.btn-filled:hover::before  { 
+    opacity: .08; 
+}
+
+.btn-filled:active::before { 
+    opacity: .12; 
+}
+
+.btn-filled:hover { 
+    box-shadow: var(--shadow-elev1); 
+}
+
+.btn-filled:disabled {
+  background: rgba(225,227,224,.12);
+  color: rgba(225,227,224,.38);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ── MD3 Outlined Text Field ── */
+.tf-wrap { 
+    position: relative;
+}
+
+.tf-input {
+  width: 100%;
+  height: 56px;
+  background: transparent;
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-xs);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  font-size: 16px;
+  padding: 24px 16px 8px 48px;
+  outline: none;
+  transition: border-color .2s, border-width .1s;
+  -moz-appearance: textfield;
+}
+
+.tf-input::-webkit-inner-spin-button,
+.tf-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+
+.tf-input:focus { 
+    border: 2px solid var(--color-primary);
+}
+
+.tf-label {
+  position: absolute;
+  left: 48px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--color-on-surface-variant);
+  pointer-events: none;
+  transition: top .15s cubic-bezier(.4,0,.2,1),
+              font-size .15s cubic-bezier(.4,0,.2,1),
+              color .15s;
+  background: var(--color-surface-low);
+  padding: 0 4px;
+}
+
+.tf-input:focus ~ .tf-label,
+.tf-input:not(:placeholder-shown) ~ .tf-label {
+  top: 8px;
+  transform: none;
+  font-size: 11px;
+  color: var(--color-primary);
+}
+
+.tf-input:not(:focus):not(:placeholder-shown) ~ .tf-label {
+  color: var(--color-on-surface-variant);
+}
+
+.tf-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-on-surface-variant);
+  pointer-events: none;
+  font-size: 20px;
+}
+ 
+/* ── Linear Progress (indeterminate) ── */
+.progress-track {
+  position: relative;
+  height: 4px;
+  width: 240px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-highest);
+  overflow: hidden;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0; bottom: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  animation: var(--animate-indeterminate);
+}
+ 
+/* ── MD3 Assist Chip ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-outline-variant);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.chip-primary {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(108,219,173,.08);
+}
+
+.chip .icon { 
+    font-size: 13px; 
+}
+ 
+/* ── Bar chart fill ── */
+.bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width .7s cubic-bezier(.4,0,.2,1);
+  width: 0;
+}

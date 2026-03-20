@@ -1,11 +1,45 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import TopBar from '../components/TopBar.astro';
+import Hero from '../components/Hero.astro';
+import Loader from '../components/Loader.astro';
+import SettingsCard from '../components/SettingsCard.astro';
+import SummaryCards from '../components/SummaryCards.astro';
+import TableCard from '../components/TableCard.astro';
+import ChartCard from '../components/ChartCard.astro';
+import Calculator from '../components/Calculator.astro';
 ---
 
 <Layout>
-	<Welcome />
+    <TopBar />
+    
+    <main class="mx-auto flex max-w-screen-xl flex-col gap-4 px-4 pb-20 pt-6">
+        <Hero />
+        
+        <div
+            id="error-box"
+            class="hidden items-center gap-3 rounded-md bg-error-container px-4 py-4 text-sm text-on-error-container"
+        >
+            <span class="icon text-xl text-error">
+                error
+            </span>
+            <span id="error-msg" />
+        </div>
+        
+        <Loader />
+        <SettingsCard />
+        <SummaryCards />
+        <TableCard />
+        <ChartCard />
+        
+        
+        <footer class="pt-4 text-center text-xs text-on-surface-variant">
+            Calculado con <strong class="font-medium text-primary">Python 3 + Pyodide</strong> ·
+            UI con <strong class="font-medium text-primary">Astro 6 + Tailwind 4 · MD3</strong> ·
+            Deploy en <strong class="font-medium text-primary">GitHub Pages</strong>
+        </footer>
+    </main>
+    
+    <!-- Logica Pyodide + render (sin HTML) -->
+    <Calculator />
 </Layout>
