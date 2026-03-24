@@ -1,6 +1,16 @@
 # Calculadora de Consumo Eléctrico para Centros Escolares
 
-Herramienta web diseñada para calcular y estimar el consumo energético de sistemas de aire acondicionado en instituciones educativas, facilitando la realización de informes de auditoría energética y planes de eficiencia.
+Aplicación web para estimar el consumo energético de sistemas de aire acondicionado en instituciones educativas, utilizando Python en el navegador mediante Pyodide.
+
+## Tecnologías
+Astro + Tailwind + Pyodide + Python
+
+## Características
+- Cálculo de consumo energético
+- Estimación de costos
+- Gráficas
+- Funciona offline
+- Ideal para auditorías energéticas escolares
 
 ## 📋 Descripción del Proyecto
 
