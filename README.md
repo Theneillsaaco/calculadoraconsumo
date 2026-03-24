@@ -32,7 +32,7 @@ La calculadora tiene en cuenta factores clave como:
 ## 🚀 Comenzando
 
 ### Prerrequisitos
-- [Bun](https://bun.sh) (versión 2.0 o superior)
+- [Bun](https://bun.sh) (versión 1.0 o superior)
 - Navegador web moderno (Chrome, Firefox, Safari, Edge)
 
 ### Instalación
