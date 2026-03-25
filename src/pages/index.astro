@@ -34,14 +34,18 @@ import { Icon } from 'astro-icon/components';
         <TableCard />
         <ChartCard />
         
+        <footer class="pt-4 text-xs text-on-surface-variant text-center">
+            <p>
+                Calculado con <strong class="font-medium text-primary">Python 3 + Pyodide</strong> ·
+                UI con <strong class="font-medium text-primary">Astro 6 + Tailwind 4 · MD3</strong> ·
+                Deploy en <strong class="font-medium text-primary">GitHub Pages</strong>
+            </p>
         
-        <footer class="pt-4 text-center text-xs text-on-surface-variant">
-            Calculado con <strong class="font-medium text-primary">Python 3 + Pyodide</strong> ·
-            UI con <strong class="font-medium text-primary">Astro 6 + Tailwind 4 · MD3</strong> ·
-            Deploy en <strong class="font-medium text-primary">GitHub Pages</strong> ·
-            Creado Con 
-            <Icon name="mdi:heart" class="w-4 h-4 mx-1 text-red-500 " />
-            y Astro
+            <p class="mt-1 flex items-center justify-center gap-1">
+                Creado con
+                <Icon name="mdi:heart" class="w-4 h-4 text-red-500" />
+                y Astro
+            </p>
         </footer>
     </main>
     
